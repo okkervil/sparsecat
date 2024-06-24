@@ -189,6 +189,8 @@ type Encoder struct {
 
 	fileSize int64
 
+	MaxOffset int64
+
 	currentOffset        int64
 	currentSection       io.Reader
 	currentSectionLength int64
@@ -268,6 +270,10 @@ func (e *Encoder) parseSection() error {
 		e.currentSection, e.currentSectionLength = e.Format.GetEndTagReader()
 		e.done = true
 		return nil
+	}
+
+	if end > e.MaxOffset {
+		end = e.MaxOffset
 	}
 
 	if err != nil {
