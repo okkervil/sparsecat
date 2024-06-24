@@ -177,7 +177,7 @@ func (d *Decoder) isSeekableFile(writer io.Writer) (*os.File, bool) {
 }
 
 func NewEncoder(file *os.File) *Encoder {
-	return &Encoder{file: file, Format: format.RbdDiffv1, MaxSectionSize: 1 << 32}
+	return &Encoder{file: file, Format: format.RbdDiffv1, MaxSectionSize: 1 << 32, MaxOffset: 0}
 }
 
 // Encoder encodes a file to a stream of sparsecat data.
