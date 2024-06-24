@@ -277,9 +277,9 @@ func (e *Encoder) parseSection() error {
 		return nil
 	}
 
-	if end > e.MaxOffset {
-		end = e.MaxOffset
-	}
+	//if end > e.MaxOffset {
+	//	end = e.MaxOffset
+	//}
 
 	if err != nil {
 		return fmt.Errorf("error detecting data section: %w", err)
