@@ -221,7 +221,13 @@ func (e *Encoder) Read(p []byte) (int, error) {
 			e.supportsHoleDetection = supportsSeekHole(e.file)
 		}
 
-		e.currentSection, e.currentSectionLength = e.Format.GetFileSizeReader(size)
+		currentOffset, err := e.file.Seek(0, io.SeekCurrent)
+		fmt.Printf("currentOffset is %d", currentOffset)
+		if currentOffset == 0 {
+			e.currentSection, e.currentSectionLength = e.Format.GetFileSizeReader(size)
+		} else {
+			e.currentOffset = currentOffset
+		}
 	}
 
 	read, err := e.currentSection.Read(p)
