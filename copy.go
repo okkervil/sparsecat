@@ -211,6 +211,9 @@ func (e *Encoder) Read(p []byte) (int, error) {
 
 		size := uint64(info.Size())
 
+		currentOffset, err := e.file.Seek(0, io.SeekCurrent)
+		//fmt.Printf("currentOffset is %d", currentOffset)
+
 		if isBlockDevice(info) {
 			e.supportsHoleDetection = false
 			bsize, err := getBlockDeviceSize(e.file)
@@ -223,8 +226,6 @@ func (e *Encoder) Read(p []byte) (int, error) {
 			e.supportsHoleDetection = supportsSeekHole(e.file)
 		}
 
-		currentOffset, err := e.file.Seek(0, io.SeekCurrent)
-		fmt.Printf("currentOffset is %d", currentOffset)
 		if currentOffset == 0 {
 			e.currentSection, e.currentSectionLength = e.Format.GetFileSizeReader(size)
 		} else {
@@ -270,6 +271,10 @@ func (e *Encoder) parseSection() error {
 		e.currentSection, e.currentSectionLength = e.Format.GetEndTagReader()
 		e.done = true
 		return nil
+	}
+
+	if end > e.MaxOffset {
+		end = e.MaxOffset
 	}
 
 	if err != nil {
