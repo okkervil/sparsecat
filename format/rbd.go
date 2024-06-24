@@ -139,6 +139,7 @@ func (r rbdDiffv2) ReadSectionHeader(reader io.Reader) (Section, error) {
 		// ignore the first int64 as we don't actually need that
 		offset := int64(binary.LittleEndian.Uint64(segmentHeader[8:17]))
 		length := int64(binary.LittleEndian.Uint64(segmentHeader[16:]))
+		fmt.Printf("offset: %d, length: %d", offset, length)
 
 		return Section{
 			Offset: offset,
