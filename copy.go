@@ -230,6 +230,10 @@ func (e *Encoder) Read(p []byte) (int, error) {
 			e.currentSection, e.currentSectionLength = e.Format.GetFileSizeReader(size)
 		} else {
 			e.currentOffset = currentOffset
+			e.currentSection, e.currentSectionLength = e.Format.GetSectionReader(e.file, format.Section{
+				Offset: currentOffset,
+				Length: 0,
+			})
 		}
 	}
 
