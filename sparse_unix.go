@@ -29,6 +29,7 @@ func detectDataSection(file *os.File, offset int64) (start int64, end int64, err
 		}
 		return 0, 0, fmt.Errorf("error seeking to data: %w", err)
 	}
+	//fmt.Printf("startOfData: %d\n", startOfData)
 
 	if err != nil {
 		return 0, 0, fmt.Errorf("error seeking to data: %w", err)
@@ -41,6 +42,7 @@ func detectDataSection(file *os.File, offset int64) (start int64, end int64, err
 		}
 		return 0, 0, fmt.Errorf("error seeking to hole: %w", err)
 	}
+	//fmt.Printf("endOfData: %d\n", endOfData)
 
 	if err != nil {
 		return 0, 0, fmt.Errorf("error seeking to hole: %w", err)

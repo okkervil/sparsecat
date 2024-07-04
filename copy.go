@@ -184,16 +184,17 @@ func NewEncoder(file *os.File) *Encoder {
 type Encoder struct {
 	file *os.File
 
-	Format         format.Format
-	MaxSectionSize int64
+	Format           format.Format
+	MaxSectionSize   int64
+	MaxSectionOffset int64
 
 	fileSize int64
 
-	currentOffset        int64
+	CurrentOffset        int64
 	currentSection       io.Reader
 	currentSectionLength int64
 	currentSectionEnd    int64
-	currentSectionRead   int
+	currentSectionRead   int64
 
 	supportsHoleDetection bool
 
@@ -202,30 +203,45 @@ type Encoder struct {
 
 func (e *Encoder) Read(p []byte) (int, error) {
 	if e.currentSection == nil {
-		info, err := e.file.Stat()
-		if err != nil {
-			return 0, fmt.Errorf("error running stat: %w", err)
-		}
-
-		size := uint64(info.Size())
-
-		if isBlockDevice(info) {
-			e.supportsHoleDetection = false
-			bsize, err := getBlockDeviceSize(e.file)
+		if e.CurrentOffset == 0 {
+			info, err := e.file.Stat()
 			if err != nil {
-				return 0, fmt.Errorf("error determining size of block device: %w", err)
+				return 0, fmt.Errorf("error running stat: %w", err)
 			}
 
-			size = uint64(bsize)
+			size := uint64(info.Size())
+
+			if isBlockDevice(info) {
+				e.supportsHoleDetection = false
+				bsize, err := getBlockDeviceSize(e.file)
+				if err != nil {
+					return 0, fmt.Errorf("error determining size of block device: %w", err)
+				}
+
+				size = uint64(bsize)
+			} else {
+				e.supportsHoleDetection = supportsSeekHole(e.file)
+			}
+
+			e.currentSection, e.currentSectionLength = e.Format.GetFileSizeReader(size)
 		} else {
+			info, err := e.file.Stat()
+			if err != nil {
+				return 0, fmt.Errorf("error running stat: %w", err)
+			}
+
+			e.fileSize = info.Size()
 			e.supportsHoleDetection = supportsSeekHole(e.file)
+			e.currentSection, e.currentSectionLength = e.Format.GetZeroReader()
+			e.currentSectionEnd = e.CurrentOffset
+			//fmt.Printf("currentSectionRead: %d\n", e.currentSectionRead)
 		}
 
-		e.currentSection, e.currentSectionLength = e.Format.GetFileSizeReader(size)
 	}
 
 	read, err := e.currentSection.Read(p)
-	e.currentSectionRead += read
+	e.currentSectionRead += int64(read)
+	//fmt.Printf("read: %d currentSectionRead: %d\n", read, e.currentSectionRead)
 
 	if err == nil {
 		return read, err
@@ -242,10 +258,15 @@ func (e *Encoder) Read(p []byte) (int, error) {
 
 	// are there more sections to come?
 	if e.done {
+		//fmt.Printf("done\n")
 		return read, io.EOF
 	}
 
-	e.currentOffset = e.currentSectionEnd
+	//currentOffset, err := e.file.Seek(0, io.SeekCurrent)
+	//fmt.Printf("a. currentOffset is %d\n", currentOffset)
+	//fmt.Printf("a. e.currentSectionEnd is %d\n", e.currentSectionEnd)
+
+	e.CurrentOffset = e.currentSectionEnd
 	e.currentSectionRead = 0
 
 	err = e.parseSection()
@@ -257,10 +278,25 @@ func (e *Encoder) parseSection() error {
 		return e.slowDetectSection()
 	}
 
-	start, end, err := detectDataSection(e.file, e.currentOffset)
+	//fmt.Printf("CurrentOffset: %d\n", e.CurrentOffset)
+
+	currentOffset, err := e.file.Seek(0, io.SeekCurrent)
+	//fmt.Printf("a. currentOffset is %d\n", currentOffset)
+
+	start, end, err := detectDataSection(e.file, e.CurrentOffset)
+	//fmt.Printf("1. start: %d, end: %d, err: %v\n", start, end, err)
+	//fmt.Printf("e.fileSize: %d\n", e.fileSize)
 	if errors.Is(err, io.EOF) {
-		e.currentSection, e.currentSectionLength = e.Format.GetEndTagReader()
-		e.done = true
+		if currentOffset == e.fileSize {
+			e.currentSection, e.currentSectionLength = e.Format.GetEndTagReader()
+			e.done = true
+			//fmt.Printf("2. start: %d, end: %d, err: %v\n", start, end, err)
+		} else {
+			e.currentSection, e.currentSectionLength = e.Format.GetZeroReader()
+			e.done = true
+			//fmt.Printf("3. start: %d, end: %d, err: %v\n", start, end, err)
+		}
+
 		return nil
 	}
 
@@ -269,6 +305,7 @@ func (e *Encoder) parseSection() error {
 	}
 
 	length := end - start
+	//fmt.Printf("1. length: %d\n", length)
 
 	if length > e.MaxSectionSize {
 		end = start + e.MaxSectionSize
@@ -282,16 +319,24 @@ func (e *Encoder) parseSection() error {
 		return err
 	}
 
+	//fmt.Printf("4. start: %d, end: %d, err: %v\n", start, end, err)
+	if length > e.MaxSectionOffset-e.CurrentOffset {
+		length = e.MaxSectionOffset - e.CurrentOffset
+	}
+	//fmt.Printf("length: %d\n", length)
+
 	e.currentSection, e.currentSectionLength = e.Format.GetSectionReader(e.file, format.Section{
 		Offset: start,
 		Length: length,
 	})
 
+	//fmt.Printf("currentSectionLength: %d", e.currentSectionLength)
+
 	return nil
 }
 
 func (e *Encoder) slowDetectSection() error {
-	start, end, reader, err := slowDetectDataSection(e.file, e.currentOffset)
+	start, end, reader, err := slowDetectDataSection(e.file, e.CurrentOffset)
 	if errors.Is(err, io.EOF) {
 		e.currentSection, e.currentSectionLength = e.Format.GetEndTagReader()
 		e.done = true

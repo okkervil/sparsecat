@@ -21,6 +21,7 @@ type Format interface {
 	GetFileSizeReader(size uint64) (reader io.Reader, length int64)
 	GetSectionReader(source io.Reader, section Section) (reader io.Reader, length int64)
 	GetEndTagReader() (reader io.Reader, length int64)
+	GetZeroReader() (reader io.Reader, length int64)
 }
 
 var formats = map[string]Format{

@@ -71,10 +71,12 @@ func (r rbdDiffv1) GetFileSizeReader(size uint64) (reader io.Reader, length int6
 	buf := make([]byte, 1+8)
 	buf[0] = sizeIndicator
 	binary.LittleEndian.PutUint64(buf[1:], size)
+	//fmt.Printf("Metadata record, size: %d\n", size)
 	return bytes.NewReader(buf), 1 + 8
 }
 
 func (r rbdDiffv1) GetSectionReader(source io.Reader, section Section) (reader io.Reader, length int64) {
+	//fmt.Printf("1. Data record, offset: %d length: %d\n", section.Offset, section.Length)
 	// char + int64 + int64
 	const headerSize = 1 + 8 + 8
 
@@ -86,12 +88,17 @@ func (r rbdDiffv1) GetSectionReader(source io.Reader, section Section) (reader i
 
 	headerReader := bytes.NewReader(buf[:])
 	fileReader := io.LimitReader(source, section.Length)
+	//fmt.Printf("Data record, offset: %d length: %d\n", section.Offset, section.Length)
 
 	return io.MultiReader(headerReader, fileReader), headerSize + section.Length
 }
 
 func (r rbdDiffv1) GetEndTagReader() (reader io.Reader, length int64) {
 	return bytes.NewReader([]byte{endIndicator}), 1
+}
+
+func (r rbdDiffv1) GetZeroReader() (reader io.Reader, length int64) {
+	return bytes.NewReader([]byte{}), 0
 }
 
 // RbdDiffv2 implements the rbd diff v2 wire format as described by https://github.com/ceph/ceph/blob/master/doc/dev/rbd-diff.rst#header-1.
@@ -176,4 +183,8 @@ func (r rbdDiffv2) GetSectionReader(source io.Reader, section Section) (reader i
 
 func (r rbdDiffv2) GetEndTagReader() (reader io.Reader, length int64) {
 	return bytes.NewReader([]byte{endIndicator}), 1
+}
+
+func (r rbdDiffv2) GetZeroReader() (reader io.Reader, length int64) {
+	return bytes.NewReader([]byte{}), 0
 }
