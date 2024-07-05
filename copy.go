@@ -305,6 +305,16 @@ func (e *Encoder) parseSection() error {
 		return fmt.Errorf("error detecting data section: %w", err)
 	}
 
+	if start > e.MaxSectionOffset {
+		e.currentSection, e.currentSectionLength = e.Format.GetZeroReader()
+		e.done = true
+		return nil
+	}
+
+	if end > e.MaxSectionOffset {
+		end = e.MaxSectionOffset
+	}
+
 	length := end - start
 	//fmt.Printf("1. length: %d\n", length)
 
