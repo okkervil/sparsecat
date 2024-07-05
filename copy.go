@@ -311,9 +311,9 @@ func (e *Encoder) parseSection() error {
 		return nil
 	}
 
-	if end > e.MaxSectionOffset {
-		end = e.MaxSectionOffset
-	}
+	//if end > e.MaxSectionOffset {
+	//	end = e.MaxSectionOffset
+	//}
 
 	length := end - start
 	//fmt.Printf("1. length: %d\n", length)
