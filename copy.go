@@ -210,6 +210,7 @@ func (e *Encoder) Read(p []byte) (int, error) {
 			}
 
 			size := uint64(info.Size())
+			e.fileSize = info.Size()
 
 			if isBlockDevice(info) {
 				e.supportsHoleDetection = false
