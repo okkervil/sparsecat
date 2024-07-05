@@ -285,8 +285,8 @@ func (e *Encoder) parseSection() error {
 	//fmt.Printf("a. currentOffset is %d\n", currentOffset)
 
 	start, end, err := detectDataSection(e.file, e.CurrentOffset)
-	//fmt.Printf("1. start: %d, end: %d, err: %v\n", start, end, err)
-	//fmt.Printf("e.fileSize: %d\n", e.fileSize)
+	fmt.Printf("1. start: %d, end: %d, err: %v\n", start, end, err)
+	fmt.Printf("e.fileSize: %d\n", e.fileSize)
 	if errors.Is(err, io.EOF) {
 		if currentOffset == e.fileSize {
 			e.currentSection, e.currentSectionLength = e.Format.GetEndTagReader()
