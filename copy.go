@@ -254,7 +254,7 @@ func (e *Encoder) Read(p []byte) (int, error) {
 
 	// current section has ended. Was it expected?
 	if e.currentSectionLength != int64(e.currentSectionRead) {
-		return read, fmt.Errorf("read size doesn't equal section size. %d vs %d. CurrentOffset %d, MaxSectionOffset %d, %w", e.currentSectionRead, e.currentSectionLength, e.CurrentOffset, e.MaxSectionOffset, io.ErrUnexpectedEOF)
+		return read, fmt.Errorf("read size doesn't equal section size. %d vs %d. CurrentOffset %d, MaxSectionOffset %d, currentSectionEnd %d, %w", e.currentSectionRead, e.currentSectionLength, e.CurrentOffset, e.MaxSectionOffset, e.currentSectionEnd, io.ErrUnexpectedEOF)
 	}
 
 	// are there more sections to come?
